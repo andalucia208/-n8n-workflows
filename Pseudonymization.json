@@ -1,0 +1,112 @@
+{
+  "name": "Pseudonymization",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://172.18.0.1:8000/pseudonymize",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "language",
+              "value": "de"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.textPlain }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -192,
+        112
+      ],
+      "id": "fb97bd39-4434-4e7b-bd0d-1595dcb657a4",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.1,
+      "position": [
+        -512,
+        112
+      ],
+      "id": "0bd5f963-7880-4ee2-b274-be99a0e5bc09",
+      "name": "Email Trigger (IMAP)",
+      "credentials": {
+        "imap": {
+          "id": "BvJLyTL9oDShGLNE",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $('Email Trigger (IMAP)').item.json.to }}",
+        "toEmail": "=andi@wurzelfenster.de",
+        "subject": "=RE: {{ $('Email Trigger (IMAP)').item.json.subject }}",
+        "html": "=Hi, here the pseuomized\n\n{{ $json.pseudonymized }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        16,
+        112
+      ],
+      "id": "722ce9fc-b33c-4b68-ac0a-a49775f58626",
+      "name": "Send email",
+      "webhookId": "f27ac09f-26c8-461c-8844-855f364a762d",
+      "credentials": {
+        "smtp": {
+          "id": "LiPsfZex3WSCR2ns",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "17c389ab-2a6d-4e30-8d6a-ea83f68e6a1a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2e3bfff84b9b2040c7c1dac7d1ca7cb5f6cdd2261adcfe967cc7b9278623dbf0"
+  },
+  "id": "qO7K8W9QztDE6Fmv",
+  "tags": []
+}
