@@ -1,0 +1,302 @@
+{
+  "name": "GamesTailor",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2ac9db3d-37ef-4e89-b2f6-2e24be3ea0d1",
+              "name": "customer_name",
+              "value": "={{ $('Microsoft Outlook Trigger').item.json.from }}",
+              "type": "string"
+            },
+            {
+              "id": "12207b85-96eb-476d-9ff0-dd699e184a4e",
+              "name": "payment_url",
+              "value": "={{ $node[\"Stripe Node\"].json.url ? $node[\"Stripe Node\"].json.url.trim() : \"https://kampanos.pt\" }}\n\n",
+              "type": "string"
+            },
+            {
+              "id": "da4b2c91-e223-42e5-b586-fcbc91563844",
+              "name": "game_pitch",
+              "value": "={{ $node[\"AI Agent\"].json[\"output\"] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        592,
+        -592
+      ],
+      "id": "6a4ed017-123c-45f1-a644-fc152c5c2e65",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.stripe.com/v1/payment_links",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "stripeApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sk_test_51ShB4yRpeLykvEocmRJctANPhir171IE9EQusAM2i3B2ge0iroG0MuARplFJO2D6TVzZgxw2sqWMXuBGjwAouJ8I00PBl5DKCh"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/x-www-form-urlencoded"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "line_items[0][price]",
+              "value": "=price_1Sk5oFPezi1FHkLUupmrSEnj"
+            },
+            {
+              "name": "line_items[0][quantity]",
+              "value": "1"
+            },
+            {
+              "name": "after_completion[type]",
+              "value": "hosted_confirmation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        400,
+        -592
+      ],
+      "id": "3baee8c6-d392-49c2-a624-c233166e5ffe",
+      "name": "Stripe Node",
+      "alwaysOutputData": true,
+      "credentials": {
+        "stripeApi": {
+          "id": "pD0AoM8DvNQB5BJ1",
+          "name": "Stripe account_official"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert 80s Arcade Game Designer. A user sent you a message via E-Mail. \n\n{{ $json.bodyPreview }}\n\nTry to find a website within the message, crawl it to find out as much as you can about the business, brand and industry. \n\nCreate a unique game title and a 2-paragraph pitch based on these information. The minigame should be a playable Ad that is played in 15-20 seconds.\n\nOutput ONLY the title and the idea in an Email HTML ready format, ritch text only, without the HTML and body tag.",
+        "options": {
+          "systemMessage": ""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        96,
+        -592
+      ],
+      "id": "3eda6621-4f9c-4012-a5ba-2200aa26f830",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.2",
+          "mode": "list",
+          "cachedResultName": "gpt-5.2"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        -432
+      ],
+      "id": "b0227222-772f-4cd1-917c-8f897d34dfcf",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "69LWp6CD7626vcLI",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "readStatus": "unread"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        -592
+      ],
+      "id": "a0d3f762-1cb5-49bd-bbfd-b99a5dc38c51",
+      "name": "Microsoft Outlook Trigger",
+      "executeOnce": false,
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "L65ih6qNftq3ZPWp",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "={{ $('Update a message').item.json.replyTo[0].emailAddress.address }}",
+        "subject": "Your custom minigame idea",
+        "bodyContent": "=<p>Hello {{ $('Microsoft Outlook Trigger').item.json.from }}</p>\n\n<p>I’ve been looking into <strong>{{ $node[\"AI Agent\"].json[\"company_name\"] || \"your business\" }}</strong> and got inspired by your brand's presence. I took the liberty of sketching out a custom arcade-style videogame concept that I believe would be a fantastic engagement tool for your audience.</p>\n\n<div style=\"background-color: #f9f9f9; padding: 25px; border-left: 6px solid #0078d4; margin: 20px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\">\n  <h2 style=\"margin-top: 0; color: #0078d4; letter-spacing: 1px;\">\n    🕹️ PROJECT: {{ $node[\"AI Agent\"].json[\"output\"].split('\\n')[0] }}\n  </h2>\n  <p style=\"font-size: 16px; line-height: 1.6; color: #333;\">\n    {{ $node[\"AI Agent\"].json[\"output\"] }}\n  </p>\n</div>\n\n<p>I’d love to hear your thoughts on this direction. If you have any adjustments or specific features in mind, feel free to reply to this email—I'm happy to refine the concept with you.</p>\n\n<p><strong>Next Steps:</strong> To transition this from a concept to a playable reality, we require a small upfront deposit of 100 EUR. This allows us to dedicate the development resources needed to build your custom environment. Once the deposit is confirmed, <strong>you will receive the first playable version of your game within 72 hours.</strong></p>\n\n<p>We want this to be a perfect fit for your brand, so we offer a <strong>100% satisfaction guarantee</strong>: if you aren't happy with the final result, we will issue a full refund, no questions asked.</p>\n\n<p style=\"text-align: center; margin-top: 30px;\">\n  <a href=\"{{ $node[\"Stripe Node\"].json.url }}\" \n     style=\"background-color: #0078d4; color: white; padding: 16px 32px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 18px;\">\n     Start Development (100 EUR Deposit)\n  </a>\n</p>\n\n<hr style=\"border: 0; border-top: 1px solid #eeeeee; margin: 40px 0;\">\n\n<p style=\"color: #777777; font-size: 13px; line-height: 1.5;\">\n  Best regards,<br><br>\n  <strong>Kampanos Portugal</strong><br>\n  📧 <a href=\"mailto:software@kampanos.pt\" style=\"color: #0078d4;\">software@kampanos.pt</a><br>\n  📞 +34624593796\n</p>",
+        "additionalFields": {
+          "bodyContentType": "html"
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -592
+      ],
+      "id": "0afd3791-67bc-4691-9930-e6c1e7c0bc02",
+      "name": "Send a message",
+      "webhookId": "c5fceb03-5903-4027-a3df-1692e3eb5f71",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "gCMCUj0ASS08B1Ak",
+          "name": "Microsoft Outlook software@"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "isRead": true
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -592
+      ],
+      "id": "ee75204f-2a78-4ace-857e-c6e8337c410a",
+      "name": "Update a message",
+      "webhookId": "f6810fe8-37d2-42a8-94a6-3dea715d51ee",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "L65ih6qNftq3ZPWp",
+          "name": "Microsoft Outlook account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Stripe Node": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Stripe Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Microsoft Outlook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Update a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a message": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "f4c840ef-e17d-4c88-bc2f-a33181bee9fd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2e3bfff84b9b2040c7c1dac7d1ca7cb5f6cdd2261adcfe967cc7b9278623dbf0"
+  },
+  "id": "BO2znemzDd8z4bQL",
+  "tags": []
+}
